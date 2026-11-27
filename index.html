@@ -20,4 +20,13 @@ $('backup').onclick=()=>{let blob=new Blob([JSON.stringify({version:1,data:db})]
 $('restore').onclick=()=>$('restoreFile').click();
 $('restoreFile').onchange=async()=>{try{let file=$('restoreFile').files[0];if(!file)return;let b=JSON.parse(await file.text());if(b.version!==1||!b.data||typeof b.data!=='object'||Array.isArray(b.data))throw Error();let imported={};for(let [k,v] of Object.entries(b.data)){let a=JSON.parse(k);if(!Array.isArray(a)||a.length!==3||!/^\d{4}$/.test(a[0])||+a[1]<1||+a[1]>12||typeof a[2]!=='string'||!v||typeof v.days!=='object'||!v.days||Array.isArray(v.days))throw Error();for(let r of Object.values(v.days))if(!r||typeof r!=='object'||Array.isArray(r))throw Error();imported[k]=v}if(confirm('バックアップを復元します。同じ氏名・年月の記録は上書きします。')){db={...db,...imported};save();home();$('homeStatus').textContent='復元しました'}}catch(e){alert('バックアップファイルを読み込めませんでした')}finally{$('restoreFile').value=''}};
 home();
+</script><script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+import {getAuth,signInAnonymously,setPersistence,browserLocalPersistence} from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
+import {getFirestore,doc,getDoc,setDoc} from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
+const panel=document.createElement('section');panel.style.cssText='max-width:750px;margin:12px auto;padding:16px;background:white;border-radius:12px;overflow-wrap:anywhere';document.body.prepend(panel);panel.textContent='端末認証を確認中…';
+try{
+const app=initializeApp({apiKey:"AIzaSyDrvkCbDnknpY3Ki6-KW8vOnaoeOe2YdLI",authDomain:"timecard-app-65b7b.firebaseapp.com",projectId:"timecard-app-65b7b",storageBucket:"timecard-app-65b7b.firebasestorage.app",messagingSenderId:"667529800002",appId:"1:667529800002:web:92ccfa14beec90933080db"});
+const auth=getAuth(app);await setPersistence(auth,browserLocalPersistence);await auth.authStateReady();const user=auth.currentUser||(await signInAnonymously(auth)).user;const fs=getFirestore(app);const uid=user.uid;const admin=await getDoc(doc(fs,'adminDevices',uid));panel.replaceChildren();const title=document.createElement('strong');title.textContent=admin.exists()?'親機登録済み':'端末登録コード';const code=document.createElement('p');code.textContent=uid;const copy=document.createElement('button');copy.textContent='端末コードをコピー';copy.onclick=async()=>{try{await navigator.clipboard.writeText(uid);copy.textContent='コピー済み'}catch(e){alert(uid)}};panel.append(title,code,copy);const note=document.createElement('p');note.textContent='クラウド同期は準備中です。現在の勤怠データは端末内に保存されます。';panel.append(note);
+}catch(e){panel.textContent='端末認証エラー: '+(e.code||e.message)}
 </script></html>
